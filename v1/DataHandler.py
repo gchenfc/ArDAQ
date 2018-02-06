@@ -6,6 +6,7 @@ from threading import Lock
 class DataHandler():
     def __init__(self,numDatum):
         print(numDatum)
+        self.numDatum = numDatum;
         self.data = np.zeros([0,numDatum]);
         self.xInd = 0;
         self.yInd = [0];
@@ -77,4 +78,8 @@ class DataHandler():
         np.save(filename,self.data)
     def saveDataTxt(self,filename="data/data.txt"):
         np.savetxt(filename,self.data,delimiter="\t")
+    def clearData(self):
+        self.lock.acquire()
+        self.data = np.zeros([0,self.numDatum]);
+        self.lock.release()
     #def collectFromArduino

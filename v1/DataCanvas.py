@@ -39,7 +39,7 @@ class DataCanvas(FigureCanvas):
     def addPoint(self,x,y):
         self.dataX.append(x)
         self.dataY.append(y)
-        if ((self.dataX[-1]-self.dataX[0])>10):
+        if ((max(self.dataX)-min(self.dataX))>10):
             ind = (np.abs(np.array(self.dataX)-(self.dataX[-1]-10))).argmin()
             self.line1.set_xdata(self.dataX[ind:])
             self.line1.set_ydata(self.dataY[ind:])
@@ -48,10 +48,12 @@ class DataCanvas(FigureCanvas):
             self.line1.set_xdata(self.dataX)
             self.line1.set_ydata(self.dataY)
             self.axes.set_xlim(left=min(self.line1.get_xdata()),right=self.line1.get_xdata()[-1])
-        self.axes.set_ylim(bottom=np.amin(self.line1.get_ydata()),top=np.amax(self.line1.get_ydata()))
+        self.axes.set_ylim(bottom=0,#np.amin(self.line1.get_ydata()),
+                            top=1.2*np.amax(self.line1.get_ydata()))
         if time.time()-self.lastPlotTime>.05:
             self.draw()
             self.lastPlotTime = time.time()
+            print("plotted")
     def clearData(self):
         self.dataX = []
         self.dataY = []

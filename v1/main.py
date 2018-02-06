@@ -17,6 +17,7 @@ DEFAULT_FORMAT = ["{:g}s",
                   "{:g}V","{:g}A","{:g}W\t",
                   "{:g}V","{:g}A","{:g}W\t",
                   "{:%}","{:%}","{:g}°F"]
+DEFAULT_FORMAT = ["t = {:g}s","V = {:g}V","I = {:g}A","{:w}"]
 
 class MainProgram(Ui_Dialog):
     def __init__(self,dialog):
@@ -51,6 +52,8 @@ class MainProgram(Ui_Dialog):
         self.plotClearButton.pressed.connect(self.dataPlot.clearData)
         self.numColSel.valueChanged.connect(self.updateVariableLines)
         self.fileSaveButton.pressed.connect(self.saveData)
+        self.dataClearButton.pressed.connect(self.clearData)
+        self.commandStringEdit.returnPressed.connect(self.sendSerialCommand)
 
     # serial methods
     def initSerialNames(self):
@@ -76,6 +79,12 @@ class MainProgram(Ui_Dialog):
         self.changeSerialBaud(self.serialBaudComboBox.currentIndex())
     def changeSerialBaud(self,ind):
         self.serialBaud = int(self.serialBaudComboBox.itemText(ind))
+    def sendSerialCommand(self):
+        toSend = str(self.commandStringEdit.text());
+        print("**********"+toSend)
+        self.commandStringEdit.setText('');
+        sendThread = threading.Thread(target=self.arduino.sendLine,kwargs={'textToSend':toSend})
+        sendThread.start()
 
     # variable info methods
     def initVariableLines(self):
@@ -114,16 +123,16 @@ class MainProgram(Ui_Dialog):
         self.alicat.start()
         while self.plotting:
             newPt = self.arduino.readLineFormat()
-            print(newPt);
+            # print(newPt);
             #newPt = self.arduino.readLineFloats(self.numColSel.value())
             if newPt!=None:
-                print('gotPt')
+                # print('gotPt')
                 toSave = [];
                 for i in newPt:
                     toSave.append(i);
                 toSave.append(float(self.alicat.getMostRecentData()[4]))
                 self.data.addLine(toSave)
-                self.dataPlot.addPoint(newPt[0],newPt[3])
+                self.dataPlot.addPoint(newPt[0],newPt[1])
                 for i,v in enumerate(newPt):
                     self.VariableLines[i].updateValue(v)
                 #print('doneIter')
@@ -136,6 +145,8 @@ class MainProgram(Ui_Dialog):
     # save
     def saveData(self):
         self.data.saveDataMatlab();
+    def clearData(self):
+        self.data.clearData();
     # clean up on close
     def reject():
         self.plotting = false
