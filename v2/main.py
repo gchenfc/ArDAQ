@@ -6,7 +6,6 @@ import threading
 import time
 
 from ArduinoInterface import ArduinoInterface
-from AlicatInterface import AlicatInterface
 from DataCanvas import DataCanvas
 from CustomWidgetWrappers import VariableListItem
 from DataHandler import DataHandler
@@ -15,9 +14,8 @@ from serial.tools import list_ports
 
 DEFAULT_FORMAT = ["{:g}s",
                   "{:g}V","{:g}A","{:g}W\t",
-                  "{:g}V","{:g}A","{:g}W\t",
-                  "{:%}","{:%}","{:g}°F"]
-DEFAULT_FORMAT = ["t = {:g}s","V = {:g}V","I = {:g}A","{:w}"]
+                  "{:g}V","{:g}A","{:g}W",
+                  "{:%}\t","{:g}°C","{:g}°C","{:%}"]
 
 class MainProgram(Ui_Dialog):
     def __init__(self,dialog):
@@ -37,14 +35,13 @@ class MainProgram(Ui_Dialog):
         self.initSerialNames()
         self.initSerialBaud()
         self.arduino = ArduinoInterface()
-        self.alicat = AlicatInterface()
 
         # variable ui setup
         self.VariableLines = [];
         self.initVariableLines()
 
         # data handler setup
-        self.data = DataHandler(len(DEFAULT_FORMAT)+1)
+        self.data = DataHandler(len(DEFAULT_FORMAT))
 
         # ui callbacks
         self.serialStart.pressed.connect(self.startData)
@@ -52,8 +49,6 @@ class MainProgram(Ui_Dialog):
         self.plotClearButton.pressed.connect(self.dataPlot.clearData)
         self.numColSel.valueChanged.connect(self.updateVariableLines)
         self.fileSaveButton.pressed.connect(self.saveData)
-        self.dataClearButton.pressed.connect(self.clearData)
-        self.commandStringEdit.returnPressed.connect(self.sendSerialCommand)
 
     # serial methods
     def initSerialNames(self):
@@ -61,10 +56,7 @@ class MainProgram(Ui_Dialog):
         for i in range(len(self.serialList)):
             self.serialNameComboBox.addItem(self.serialList[i].device)
         self.serialNameComboBox.activated.connect(self.changeSerialName)
-        if (self.serialList[-1].device=='/dev/cu.usbserial'):
-            self.changeSerialName(len(self.serialList)-2)
-        else:
-            self.changeSerialName(len(self.serialList)-1)
+        self.changeSerialName(len(self.serialList)-1)
     def updateSerialNames(self):
         self.serialNameComboBox.clear()
         self.serialList = list_ports.comports()
@@ -79,12 +71,6 @@ class MainProgram(Ui_Dialog):
         self.changeSerialBaud(self.serialBaudComboBox.currentIndex())
     def changeSerialBaud(self,ind):
         self.serialBaud = int(self.serialBaudComboBox.itemText(ind))
-    def sendSerialCommand(self):
-        toSend = str(self.commandStringEdit.text());
-        print("**********"+toSend)
-        self.commandStringEdit.setText('');
-        sendThread = threading.Thread(target=self.arduino.sendLine,kwargs={'textToSend':toSend})
-        sendThread.start()
 
     # variable info methods
     def initVariableLines(self):
@@ -120,23 +106,16 @@ class MainProgram(Ui_Dialog):
         self.arduino.setSerialName(self.serialObj.device)
         self.arduino.setBaud(self.serialBaud)
         self.arduino.start()
-        self.alicat.start()
         while self.plotting:
             newPt = self.arduino.readLineFormat()
-            # print(newPt);
             #newPt = self.arduino.readLineFloats(self.numColSel.value())
             if newPt!=None:
-                # print('gotPt')
-                toSave = [];
-                for i in newPt:
-                    toSave.append(i);
-                toSave.append(float(self.alicat.getMostRecentData()[4]))
-                self.data.addLine(toSave)
-                self.dataPlot.addPoint(newPt[0],newPt[1])
+                print('gotPt')
+                self.data.addLine(newPt)
+                self.dataPlot.addPoint(newPt[0],newPt[3])
                 for i,v in enumerate(newPt):
                     self.VariableLines[i].updateValue(v)
-                #print('doneIter')
-        self.alicat.stop();
+                print('doneIter')
         self.arduino.close()
     # value display
     def displayValues(self):
@@ -145,8 +124,6 @@ class MainProgram(Ui_Dialog):
     # save
     def saveData(self):
         self.data.saveDataMatlab();
-    def clearData(self):
-        self.data.clearData();
     # clean up on close
     def reject():
         self.plotting = false

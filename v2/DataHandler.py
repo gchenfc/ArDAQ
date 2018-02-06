@@ -6,7 +6,6 @@ from threading import Lock
 class DataHandler():
     def __init__(self,numDatum):
         print(numDatum)
-        self.numDatum = numDatum;
         self.data = np.zeros([0,numDatum]);
         self.xInd = 0;
         self.yInd = [0];
@@ -72,14 +71,10 @@ class DataHandler():
         return None
 
     # save data
-    def saveDataMatlab(self,filename="data/data.mat"):
+    def saveDataMatlab(self,filename="data.mat"):
         sio.savemat(filename,{'data':self.data})
-    def saveDataPickle(self,filename="data/data.npy"):
+    def saveDataPickle(self,filename="data.npy"):
         np.save(filename,self.data)
-    def saveDataTxt(self,filename="data/data.txt"):
+    def saveDataTxt(self,filename="data.txt"):
         np.savetxt(filename,self.data,delimiter="\t")
-    def clearData(self):
-        self.lock.acquire()
-        self.data = np.zeros([0,self.numDatum]);
-        self.lock.release()
     #def collectFromArduino

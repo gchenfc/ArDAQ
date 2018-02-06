@@ -18,18 +18,23 @@ class AlicatInterface():
         self.mostRecentData = datVec;
         self.collecting = False;
 
-    def start(self):
+    def start(self,attempt=0):
         try:
             self.ser.baudrate = self.baudRate
             self.ser.port = self.serialName
             self.ser.timeout = self.timeout
+            if (attempt==0):
+                self.collecting = True;
             if not self.ser.isOpen():
                 self.ser.open()
-            self.collecting = True;
             self.collectThread = threading.Thread(target=self.collectData)
             self.collectThread.start();
         except:
             print("Alicat not connected!!! not collecting h2 consumption...")
+            if attempt<5 and self.collecting==True:
+                print("Attempting to connect again in 3 seconds...")
+                t = threading.Timer(3,self.start,kwargs={'attempt':attempt+1})
+                t.start()
     def collectData(self):
         while self.collecting:
             self.poll()
@@ -38,7 +43,7 @@ class AlicatInterface():
     def stop(self):
         self.collecting = False
     def getMostRecentData(self):
-        print(self.mostRecentData)
+        # print(self.mostRecentData)
         return self.mostRecentData
     def poll(self):
         try:
